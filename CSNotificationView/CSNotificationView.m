@@ -24,6 +24,7 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
 #pragma mark - content views
 @property (nonatomic, strong, readonly) UIView* symbolView; // is updated by -(void)updateSymbolView
 @property (nonatomic, strong) UILabel* textLabel;
+@property (nonatomic, strong) UILabel* subTextLabel;
 @property (nonatomic, strong) UIColor* contentColor;
 
 @end
@@ -44,6 +45,32 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
     note.tintColor = tintColor;
     note.image = image;
     note.textLabel.text = message;
+    
+    void (^completion)() = ^{[note setVisible:NO animated:YES completion:nil];};
+    [note setVisible:YES animated:YES completion:^{
+        double delayInSeconds = duration;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            completion();
+        });
+    }];
+    
+}
+
++ (void)showInViewController:(UIViewController*)viewController
+                   tintColor:(UIColor*)tintColor
+                       image:(UIImage*)image
+                     message:(NSString*)message
+                  subMessage:(NSString*)subMessage
+                    duration:(NSTimeInterval)duration
+{
+    NSAssert(message, @"'message' must not be nil.");
+    
+    __block CSNotificationView* note = [[CSNotificationView alloc] initWithParentViewController:viewController];
+    note.tintColor = tintColor;
+    note.image = image;
+    note.textLabel.text = message;
+    note.subTextLabel.text = subMessage;
     
     void (^completion)() = ^{[note setVisible:NO animated:YES completion:nil];};
     [note setVisible:YES animated:YES completion:^{
@@ -144,6 +171,24 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
                 _textLabel.translatesAutoresizingMaskIntoConstraints = NO;
                 [self addSubview:_textLabel];
             }
+            //subTextLabel
+            {
+                _subTextLabel = [[UILabel alloc] init];
+                
+                UIFontDescriptor* textLabelFontDescriptor = [UIFontDescriptor preferredFontDescriptorWithTextStyle:UIFontTextStyleBody];
+                _subTextLabel.font = [UIFont fontWithDescriptor:textLabelFontDescriptor size:13.0f];
+                
+                _subTextLabel.minimumScaleFactor = 0.6;
+                _subTextLabel.textAlignment = NSTextAlignmentCenter;
+                _subTextLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+                _subTextLabel.adjustsFontSizeToFitWidth = YES;
+                
+                _subTextLabel.numberOfLines = 1;
+                _subTextLabel.textColor = [UIColor whiteColor];
+                _subTextLabel.translatesAutoresizingMaskIntoConstraints = NO;
+                [self addSubview:_subTextLabel];
+            }
+            
             //symbolView
             {
                 [self updateSymbolView];
@@ -181,6 +226,12 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
                             options:0
                             metrics:metrics
                                 views:NSDictionaryOfVariableBindings(_symbolView)]];
+    
+    [self addConstraints:[NSLayoutConstraint
+                          constraintsWithVisualFormat:@"V:[_textLabel]-[_subTextLabel]"
+                          options:0
+                          metrics:metrics
+                          views:NSDictionaryOfVariableBindings(_textLabel, _subTextLabel)]];
     
     CGFloat topInset = CGRectGetHeight(self.frame) - 4;
     
