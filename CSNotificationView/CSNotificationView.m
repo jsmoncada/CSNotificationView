@@ -135,6 +135,7 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
                 UIFontDescriptor* textLabelFontDescriptor = [UIFontDescriptor preferredFontDescriptorWithTextStyle:UIFontTextStyleBody];
                 _textLabel.font = [UIFont fontWithDescriptor:textLabelFontDescriptor size:17.0f];
                 _textLabel.minimumScaleFactor = 0.6;
+                _textLabel.textAlignment = NSTextAlignmentCenter;
                 _textLabel.lineBreakMode = NSLineBreakByTruncatingTail;
                 _textLabel.adjustsFontSizeToFitWidth = YES;
                 
