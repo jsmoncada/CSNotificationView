@@ -184,7 +184,7 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
                 _subTextLabel.adjustsFontSizeToFitWidth = YES;
                 
                 _subTextLabel.numberOfLines = 1;
-                _subTextLabel.textColor = [UIColor whiteColor];
+                _subTextLabel.textColor = [UIColor colorWithRed:0 green:96/255.0 blue:121/255.0 alpha:1];
                 _subTextLabel.translatesAutoresizingMaskIntoConstraints = NO;
                 [self addSubview:_subTextLabel];
             }
@@ -220,6 +220,12 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
                             options:0
                             metrics:metrics
                               views:NSDictionaryOfVariableBindings(_textLabel, _symbolView)]];
+    
+    [self addConstraints:[NSLayoutConstraint
+                          constraintsWithVisualFormat:@"H:|-(4)-[_symbolView(symbolViewWidth)]-(5)-[_subTextLabel]-(10)-|"
+                          options:0
+                          metrics:metrics
+                          views:NSDictionaryOfVariableBindings(_subTextLabel, _symbolView)]];
     
     [self addConstraints:[NSLayoutConstraint
         constraintsWithVisualFormat:@"V:[_symbolView(symbolViewHeight)]"
