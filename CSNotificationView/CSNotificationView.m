@@ -20,6 +20,7 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
 @property (nonatomic, weak) UIViewController* parentViewController;
 @property (nonatomic, weak) UINavigationController* parentNavigationController;
 @property (nonatomic, getter = isVisible) BOOL visible;
+@property (nonatomic) BOOL hasSubMessage;
 
 #pragma mark - content views
 @property (nonatomic, strong, readonly) UIView* symbolView; // is updated by -(void)updateSymbolView
@@ -34,10 +35,10 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
 #pragma mark + quick presentation
 
 + (void)showInViewController:(UIViewController*)viewController
-         tintColor:(UIColor*)tintColor
-             image:(UIImage*)image
-           message:(NSString*)message
-          duration:(NSTimeInterval)duration
+                   tintColor:(UIColor*)tintColor
+                       image:(UIImage*)image
+                     message:(NSString*)message
+                    duration:(NSTimeInterval)duration
 {
     NSAssert(message, @"'message' must not be nil.");
     
@@ -45,6 +46,7 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
     note.tintColor = tintColor;
     note.image = image;
     note.textLabel.text = message;
+    note.hasSubMessage = NO;
     
     void (^completion)() = ^{[note setVisible:NO animated:YES completion:nil];};
     [note setVisible:YES animated:YES completion:^{
@@ -71,6 +73,38 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
     note.image = image;
     note.textLabel.text = message;
     note.subTextLabel.text = subMessage;
+    note.hasSubMessage = YES;
+    
+    void (^completion)() = ^{[note setVisible:NO animated:YES completion:nil];};
+    [note setVisible:YES animated:YES completion:^{
+        double delayInSeconds = duration;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            completion();
+        });
+    }];
+    
+}
+
++ (void)showInViewController:(UIViewController*)viewController
+                   tintColor:(UIColor*)tintColor
+                       image:(UIImage*)image
+                     message:(NSString*)message
+                 messageSize:(float)messageFontSize
+                  subMessage:(NSString*)subMessage
+              subMessageSize:(float)subMessageFontSize
+                    duration:(NSTimeInterval)duration
+{
+    NSAssert(message, @"'message' must not be nil.");
+    
+    __block CSNotificationView* note = [[CSNotificationView alloc] initWithParentViewController:viewController];
+    note.tintColor = tintColor;
+    note.image = image;
+    note.textLabel.text = message;
+    note.textLabel.font = [note.textLabel.font fontWithSize:messageFontSize];
+    note.subTextLabel.text = subMessage;
+    note.subTextLabel.font = [note.subTextLabel.font fontWithSize:subMessageFontSize];
+    note.hasSubMessage = YES;
     
     void (^completion)() = ^{[note setVisible:NO animated:YES completion:nil];};
     [note setVisible:YES animated:YES completion:^{
@@ -84,16 +118,16 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
 }
 
 + (void)showInViewController:(UIViewController *)viewController
-             style:(CSNotificationViewStyle)style
-           message:(NSString *)message
+                       style:(CSNotificationViewStyle)style
+                     message:(NSString *)message
 {
     
     
     [CSNotificationView showInViewController:viewController
-                         tintColor:[CSNotificationView blurTintColorForStyle:style]
-                             image:[CSNotificationView imageForStyle:style]
-                           message:message
-                          duration:kCSNotificationViewDefaultShowDuration];
+                                   tintColor:[CSNotificationView blurTintColorForStyle:style]
+                                       image:[CSNotificationView imageForStyle:style]
+                                     message:message
+                                    duration:kCSNotificationViewDefaultShowDuration];
 }
 
 #pragma mark + creators
@@ -208,18 +242,18 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
     [self removeConstraints:self.constraints];
     
     CGFloat symbolViewWidth = self.symbolView.tag != kCSNotificationViewEmptySymbolViewTag ?
-                                kCSNotificationViewSymbolViewSidelength : 0.0f;
+    kCSNotificationViewSymbolViewSidelength : 0.0f;
     CGFloat symbolViewHeight = kCSNotificationViewSymbolViewSidelength;
     
     NSDictionary* metrics =
-        @{@"symbolViewWidth": [NSNumber numberWithFloat:symbolViewWidth],
-          @"symbolViewHeight":[NSNumber numberWithFloat:symbolViewHeight]};
+    @{@"symbolViewWidth": [NSNumber numberWithFloat:symbolViewWidth],
+      @"symbolViewHeight":[NSNumber numberWithFloat:symbolViewHeight]};
     
     [self addConstraints:[NSLayoutConstraint
-        constraintsWithVisualFormat:@"H:|-(4)-[_symbolView(symbolViewWidth)]-(5)-[_textLabel]-(10)-|"
-                            options:0
-                            metrics:metrics
-                              views:NSDictionaryOfVariableBindings(_textLabel, _symbolView)]];
+                          constraintsWithVisualFormat:@"H:|-(4)-[_symbolView(symbolViewWidth)]-(5)-[_textLabel]-(10)-|"
+                          options:0
+                          metrics:metrics
+                          views:NSDictionaryOfVariableBindings(_textLabel, _symbolView)]];
     
     [self addConstraints:[NSLayoutConstraint
                           constraintsWithVisualFormat:@"H:|-(4)-[_symbolView(symbolViewWidth)]-(5)-[_subTextLabel]-(10)-|"
@@ -228,13 +262,13 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
                           views:NSDictionaryOfVariableBindings(_subTextLabel, _symbolView)]];
     
     [self addConstraints:[NSLayoutConstraint
-        constraintsWithVisualFormat:@"V:[_symbolView(symbolViewHeight)]"
-                            options:0
-                            metrics:metrics
-                                views:NSDictionaryOfVariableBindings(_symbolView)]];
+                          constraintsWithVisualFormat:@"V:[_symbolView(symbolViewHeight)]"
+                          options:0
+                          metrics:metrics
+                          views:NSDictionaryOfVariableBindings(_symbolView)]];
     
     [self addConstraints:[NSLayoutConstraint
-                          constraintsWithVisualFormat:@"V:[_textLabel]-[_subTextLabel]"
+                          constraintsWithVisualFormat:@"V:[_textLabel]-(-0.5)-[_subTextLabel]"
                           options:0
                           metrics:metrics
                           views:NSDictionaryOfVariableBindings(_textLabel, _subTextLabel)]];
@@ -242,20 +276,31 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
     CGFloat topInset = CGRectGetHeight(self.frame) - 4;
     
     [self addConstraint:[NSLayoutConstraint
-                constraintWithItem:_symbolView
+                         constraintWithItem:_symbolView
                          attribute:NSLayoutAttributeBottom
                          relatedBy:NSLayoutRelationEqual
-                            toItem:self
+                         toItem:self
                          attribute:NSLayoutAttributeBottom
                          multiplier:0.0f constant:topInset]];
     
-    [self addConstraint:[NSLayoutConstraint
-        constraintWithItem:_textLabel
-                 attribute:NSLayoutAttributeCenterY
-                 relatedBy:NSLayoutRelationEqual
-                    toItem:_symbolView
-                 attribute:NSLayoutAttributeCenterY
-                multiplier:1.0f constant:0]];
+    if (self.hasSubMessage) {
+        [self addConstraint:[NSLayoutConstraint
+                             constraintWithItem:_textLabel
+                             attribute:NSLayoutAttributeCenterY
+                             relatedBy:NSLayoutRelationEqual
+                             toItem:_symbolView
+                             attribute:NSLayoutAttributeCenterY
+                             multiplier:0.9f constant:0]];
+    }
+    else {
+        [self addConstraint:[NSLayoutConstraint
+                             constraintWithItem:_textLabel
+                             attribute:NSLayoutAttributeCenterY
+                             relatedBy:NSLayoutRelationEqual
+                             toItem:_symbolView
+                             attribute:NSLayoutAttributeCenterY
+                             multiplier:1.0f constant:0]];
+    }
     
     [super updateConstraints];
 }
@@ -318,10 +363,10 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
 - (void)dismissWithStyle:(CSNotificationViewStyle)style message:(NSString *)message duration:(NSTimeInterval)duration animated:(BOOL)animated
 {
     NSParameterAssert(message);
-
+    
     __block typeof(self) weakself = self;
     [UIView animateWithDuration:0.1 animations:^{
-
+        
         weakself.showingActivity = NO;
         weakself.image = [CSNotificationView imageForStyle:style];
         weakself.textLabel.text = message;
@@ -356,7 +401,7 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
     UIViewController* viewController = self.parentNavigationController ?: self.parentViewController;
     
     CGFloat topLayoutGuideLength = [self topLayoutGuideLengthCalculation];
-
+    
     CGRect displayFrame = CGRectMake(0, 0, CGRectGetWidth(viewController.view.frame),
                                      kCSNotificationViewHeight + topLayoutGuideLength);
     
@@ -409,7 +454,7 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
     _symbolView.translatesAutoresizingMaskIntoConstraints = NO;
     [self addSubview:_symbolView];
     [self setNeedsUpdateConstraints];
-
+    
 }
 
 #pragma mark -- image
@@ -466,7 +511,7 @@ static NSInteger const kCSNotificationViewEmptySymbolViewTag = 666;
 {
     if (!image) return nil;
     NSParameterAssert([tintColor isKindOfClass:[UIColor class]]);
- 
+    
     //Credits: https://gist.github.com/omz/1102091
     CGRect rect = CGRectMake(0, 0, image.size.width, image.size.height);
     UIGraphicsBeginImageContextWithOptions(rect.size, NO, image.scale);

@@ -8,8 +8,8 @@
 
 #import <UIKit/UIKit.h>
 
-static CGFloat const kCSNotificationViewHeight = 50.0f;
-static CGFloat const kCSNotificationViewSymbolViewSidelength = 57.0f;
+static CGFloat const kCSNotificationViewHeight = 57.0f;
+static CGFloat const kCSNotificationViewSymbolViewSidelength = 44.0f;
 static NSTimeInterval const kCSNotificationViewDefaultShowDuration = 2.0;
 
 typedef enum {
@@ -22,20 +22,29 @@ typedef enum {
 #pragma mark + quick presentation
 
 + (void)showInViewController:(UIViewController*)viewController
-             style:(CSNotificationViewStyle)style
-           message:(NSString*)message;
+                       style:(CSNotificationViewStyle)style
+                     message:(NSString*)message;
 
 + (void)showInViewController:(UIViewController*)viewController
-         tintColor:(UIColor*)tintColor
-             image:(UIImage*)image
-           message:(NSString*)message
-          duration:(NSTimeInterval)duration;
+                   tintColor:(UIColor*)tintColor
+                       image:(UIImage*)image
+                     message:(NSString*)message
+                    duration:(NSTimeInterval)duration;
 
 + (void)showInViewController:(UIViewController*)viewController
                    tintColor:(UIColor*)tintColor
                        image:(UIImage*)image
                      message:(NSString*)message
                   subMessage:(NSString*)subMessage
+                    duration:(NSTimeInterval)duration;
+
++ (void)showInViewController:(UIViewController*)viewController
+                   tintColor:(UIColor*)tintColor
+                       image:(UIImage*)image
+                     message:(NSString*)message
+                 messageSize:(float)messageFontSize
+                  subMessage:(NSString*)subMessage
+              subMessageSize:(float)subMessageFontSize
                     duration:(NSTimeInterval)duration;
 
 #pragma mark + creators
